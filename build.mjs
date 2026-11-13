@@ -1,5 +1,7 @@
 import { build } from 'esbuild';
-import { copyFileSync, mkdirSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+
+const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 
 const out = 'dist/StashGlobalInvert';
 rmSync('dist', { recursive: true, force: true });
@@ -16,7 +18,7 @@ await build({
   minify: false,
   legalComments: 'none',
   outfile: `${out}/stash-global-invert.js`,
-  banner: { js: '/* Stash Global Handy Invert v0.1.0 */' },
+  banner: { js: `/* Stash Global Handy Invert v${version} */` },
 });
 copyFileSync('src/style.css', `${out}/stash-global-invert.css`);
 copyFileSync('plugin/StashGlobalInvert.yml', `${out}/StashGlobalInvert.yml`);

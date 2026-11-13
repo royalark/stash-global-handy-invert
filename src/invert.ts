@@ -12,6 +12,8 @@
  *  - Stash's built-in client honours `inverted` / `range` -> invertForStash
  */
 
+import { t } from './i18n';
+
 export type Action = { at: number; pos: number; [key: string]: unknown };
 export type FunscriptLike = {
   actions: Action[];
@@ -36,19 +38,19 @@ export function validateScript(
   maxPos = 100,
 ): asserts script is FunscriptLike {
   if (!script || typeof script !== 'object')
-    throw new InvalidScriptError('The script is not a JSON object');
+    throw new InvalidScriptError(t('errNotObject'));
   const actions = (script as FunscriptLike).actions;
   if (!Array.isArray(actions) || actions.length === 0)
-    throw new InvalidScriptError('The script has no actions');
+    throw new InvalidScriptError(t('errNoActions'));
   for (let i = 0; i < actions.length; i++) {
     const a = actions[i];
     if (!a || typeof a !== 'object')
-      throw new InvalidScriptError(`Action #${i} is not valid`);
+      throw new InvalidScriptError(t('errAction', { i }));
     if (!isFiniteNumber(a.at) || a.at < 0)
-      throw new InvalidScriptError(`Action #${i} has an invalid time (at)`);
+      throw new InvalidScriptError(t('errAt', { i }));
     if (!isFiniteNumber(a.pos) || a.pos < 0 || a.pos > maxPos)
       throw new InvalidScriptError(
-        `Action #${i} has a position (pos) outside 0-${maxPos}`,
+        t('errPos', { i, max: maxPos }),
       );
   }
 }
@@ -100,7 +102,7 @@ export function invertForStash(script: unknown): FunscriptLike {
   const range = (script as FunscriptLike | null)?.range;
   if (range !== undefined && range !== null && range !== 0) {
     if (!isFiniteNumber(range) || range <= 0)
-      throw new InvalidScriptError('The script has an invalid range');
+      throw new InvalidScriptError(t('errRange'));
   }
   validateScript(script, range ? range : 100);
   const out = mirror(script.actions, stashOutputPositions(script));

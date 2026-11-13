@@ -105,6 +105,25 @@ To update later, use `Installed Plugins -> Check for updates`.
 - **Changing it during playback:** the device is stopped and the video paused first. The script is then prepared again with the new setting. When the "applied - press play to resume" toast appears, press play. The direction never flips in the middle of a stroke.
 - Hover the button to see whether the script currently prepared on the device is inverted or original.
 
+### Changes made in another tab or browser
+
+The setting is global, so a change made anywhere reaches every open scene page:
+
+| Where the change was made | When this page picks it up |
+|---|---|
+| Another tab of the same browser | Immediately |
+| Another browser or device | Within about 5 seconds while the scene page is visible, and immediately when its window regains focus |
+| `Settings -> Plugins` in the same tab | Immediately |
+
+What the page then does:
+
+- **Video playing:** the same safe sequence as the button. The device is stopped, the video paused, and the script prepared again, followed by a toast to press play.
+- **Not playing:** the device is left alone, because another tab may be the one using it. The button shows the new state with "Applies on next play". The next time you press play, the script is prepared again first and you are asked to press play once more.
+
+### Language
+
+The plugin follows Stash's interface language (`Settings -> Interface -> Language`). Korean (`ko-*`) shows Korean text; every other language shows English. This covers the button, tooltip, badges, toasts and error messages.
+
 ## Behaviour
 
 | Situation | Invert OFF | Invert ON |
@@ -134,16 +153,16 @@ plugins:
 ```
 
 - It is stored on the server, so every browser and device sees the same value.
-- The value is re-read from the server for every device upload. A change made in another browser applies from the next upload (opening a scene, changing scripts). The button in an already open tab may need a reload to update.
+- The value is re-read from the server for every device upload, and open scene pages follow changes made elsewhere (see "Changes made in another tab or browser").
 - If the setting cannot be read from the server and no cached value exists, the upload is refused rather than assuming OFF.
 
 ## Verification
 
 | Kind | Result |
 |---|---|
-| Unit + integration (`npm test`) | 64 passed: pure transforms, settings, client wrapper, SIT transform, wiring with the real SIT fork source |
+| Unit + integration (`npm test`) | 77 passed: pure transforms, settings and sync, i18n, client wrapper and play guard, SIT transform, wiring with the real SIT fork source |
 | SIT fork unit tests | 14 passed |
-| End-to-end (real Stash v0.32.0 binary + real plugin builds + Chromium) | 18 passed, on both development and production builds |
+| End-to-end (real Stash v0.32.0 binary + real plugin builds + Chromium) | 22 passed |
 
 The end-to-end tests assert on the CSV the device would download and on the `hssp/setup` call that loads it. They cover:
 
@@ -157,6 +176,9 @@ The end-to-end tests assert on the CSV the device would download and on the `hss
 - Stash's built-in client path, and the hosted-funscript block
 - removing the plugin restores the previous behaviour
 - coexistence with SIT's Interactive tab
+- a change in another tab is picked up in under 2 seconds and a playing tab is prepared again
+- a change in another browser is picked up while playing (prepared again) and while paused (device untouched until play)
+- Korean UI when Stash's language is Korean
 
 Installing through the plugin source (Option A) was also checked on a local Stash v0.32.0: both packages installed, loaded, and inverted the script sent to the device.
 
@@ -201,8 +223,9 @@ npm run e2e       # Playwright against a real Stash binary, see e2e/README.md
 | `src/invert.ts` | Pure transforms (for SIT and for Stash's built-in client) |
 | `src/client.ts` | `interactiveClientProvider` wrapper: built-in path invert, SIT patch detection, safety fuse |
 | `src/sit.ts` | SIT extension API connection and output transform |
-| `src/settings.ts` | Reading and writing the server-side setting |
-| `src/ui.tsx` | Toggle button and toggle sequence |
+| `src/settings.ts` | Reading and writing the server-side setting, sync across tabs and browsers |
+| `src/ui.tsx` | Toggle button, toggle sequence, reacting to changes made elsewhere |
+| `src/i18n.ts` | English and Korean text |
 | `e2e/` | End-to-end suite (real Stash, faked Handy API) |
 
 ## Out of scope

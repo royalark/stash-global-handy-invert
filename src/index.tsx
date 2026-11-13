@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { installClientProvider } from './client';
+import { setLanguageSource } from './i18n';
 import { apolloBackend, createSettingsStore } from './settings';
 import { connectSit, createSitTransform } from './sit';
 import { createStatusBus } from './status';
@@ -7,6 +8,25 @@ import { createInvertToggle } from './ui';
 
 const pluginApi = (window as any).PluginApi;
 const { React } = pluginApi;
+
+// follow Stash's interface language (Settings -> Interface -> Language)
+setLanguageSource(() => {
+  try {
+    return pluginApi.utils.StashService.getClient().readQuery({
+      query: pluginApi.GQL.ConfigurationDocument,
+    })?.configuration?.interface?.language;
+  } catch {
+    return undefined;
+  }
+});
+
+// set by the scene page toggle while it is mounted
+let playGuard: (() => boolean) | null = null;
+const guard = {
+  set(next: (() => boolean) | null) {
+    playGuard = next;
+  },
+};
 
 const settings = createSettingsStore(apolloBackend(pluginApi));
 const status = createStatusBus();
@@ -24,6 +44,7 @@ installClientProvider(pluginApi.utils.InteractiveUtils, {
   resolveEnabled,
   sitApi: sit.api,
   status,
+  playGuard: () => playGuard?.() ?? false,
 });
 
 const GlobalInvertToggle = createInvertToggle({
@@ -31,6 +52,7 @@ const GlobalInvertToggle = createInvertToggle({
   settings,
   status,
   sitApi: sit.api,
+  guard,
 });
 
 /**

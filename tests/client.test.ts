@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  HOSTED_FUNSCRIPT_MESSAGE,
+  hostedFunscriptMessage,
   installClientProvider,
-  LEGACY_SIT_MESSAGE,
+  legacySitMessage,
   wrapClient,
 } from '../src/client';
 import { stashOutputPositions } from '../src/invert';
@@ -117,7 +117,7 @@ describe('built-in Stash path', () => {
     const t = setup();
     t.base.useStashHostedFunscript = true;
     await expect(t.client.uploadScript('/scene/1/funscript')).rejects.toThrow(
-      HOSTED_FUNSCRIPT_MESSAGE,
+      hostedFunscriptMessage(),
     );
     expect(t.base.sent).toEqual([]);
   });
@@ -201,12 +201,12 @@ describe('StashInteractiveTools path', () => {
     sitPatch(t.client, 'uploadScript', sitUpload);
     sitPatch(t.client, 'play', sitPlay);
     sitPatch(t.client, 'ensurePlaying', sitPlay);
-    await expect(t.client.uploadScript('blob:x')).rejects.toThrow(LEGACY_SIT_MESSAGE);
+    await expect(t.client.uploadScript('blob:x')).rejects.toThrow(legacySitMessage());
     await t.client.play(1);
     await t.client.ensurePlaying(1);
     expect(sitUpload).not.toHaveBeenCalled();
     expect(sitPlay).not.toHaveBeenCalled();
-    expect(t.status.get().status).toEqual({ kind: 'blocked', message: LEGACY_SIT_MESSAGE });
+    expect(t.status.get().status).toEqual({ kind: 'blocked', message: legacySitMessage() });
   });
 
   it('SIT without extension API + OFF: SIT works exactly as before', async () => {
@@ -219,6 +219,32 @@ describe('StashInteractiveTools path', () => {
     await t.client.play(1);
     expect(sitUpload).toHaveBeenCalled();
     expect(sitPlay).toHaveBeenCalled();
+  });
+});
+
+describe('play guard', () => {
+  it('refuses to start the device while the guard says the script is stale', async () => {
+    const t = setup({ enabled: false });
+    const guard = vi.fn(() => true);
+    (t.deps as any).playGuard = guard;
+    const client = wrapClient(new FakeStashClient(t.files), t.deps) as any;
+    await client.uploadScript('/scene/1/funscript');
+    await client.play(1);
+    await client.ensurePlaying(1);
+    expect(guard).toHaveBeenCalledTimes(2);
+    expect(client.playing).toBe(false);
+    guard.mockReturnValue(false);
+    await client.play(1);
+    expect(client.playing).toBe(true);
+  });
+
+  it('also guards StashInteractiveTools\' play', async () => {
+    const t = setup({ enabled: false });
+    const client = wrapClient(new FakeStashClient(t.files), { ...t.deps, playGuard: () => true }) as any;
+    const sitPlay = vi.fn(async () => undefined);
+    sitPatch(client, 'play', sitPlay);
+    await client.play(1);
+    expect(sitPlay).not.toHaveBeenCalled();
   });
 });
 

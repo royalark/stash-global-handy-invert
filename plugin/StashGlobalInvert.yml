@@ -3,7 +3,7 @@ description: >-
   Persistent, global invert of the Handy (L0) stroke direction for every scene.
   Works with Stash's built-in Handy client and with StashInteractiveTools
   (requires the SIT extension API; without it playback is blocked while ON).
-version: 0.1.0
+version: 0.2.0
 ui:
   # load after SIT when it is installed (ordering only; SIT is optional)
   requires:

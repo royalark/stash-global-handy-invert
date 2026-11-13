@@ -3,6 +3,7 @@
  * see StashInteractiveTools/docs/extensions.md). Only the shape used here is
  * declared; SIT is never imported.
  */
+import { MessageKey, t } from './i18n';
 import { invertForSit, looksLikeCustomInvert } from './invert';
 import { StatusBus } from './status';
 
@@ -39,14 +40,12 @@ export interface SitExtensionApi {
   getState(): { activeSceneId: string | null };
 }
 
-const OPAQUE_MESSAGES: Record<string, string> = {
-  'handy-token':
-    'Handy token scripts cannot be inverted because their content is not visible. Playback was blocked (turn Invert off to play it).',
-  ivdb: 'ivdb scripts cannot be inverted because their content is not visible. Playback was blocked (turn Invert off to play it).',
+const OPAQUE_MESSAGES: Record<string, MessageKey> = {
+  'handy-token': 'errHandyToken',
+  ivdb: 'errIvdb',
 };
 
-export const CUSTOM_INVERT_WARNING =
-  'A SIT Custom modifier already inverts (100 - pos). Combined with Global Invert the direction flips back. Remove that preset.';
+export const customInvertWarning = () => t('warnCustomInvert');
 
 export function createSitTransform(deps: {
   resolveEnabled: () => Promise<boolean>;
@@ -62,13 +61,12 @@ export function createSitTransform(deps: {
       }
       if (source.kind === 'opaque')
         throw new Error(
-          OPAQUE_MESSAGES[source.reason] ??
-            'This script cannot be inverted. Playback was blocked.',
+          t(OPAQUE_MESSAGES[source.reason] ?? 'errOpaque'),
         );
       const doubled = ctx.modifiers.some(
         (m) => m.id === 'custom' && looksLikeCustomInvert(m.values?.functionText),
       );
-      deps.status.warn(doubled ? CUSTOM_INVERT_WARNING : undefined);
+      deps.status.warn(doubled ? customInvertWarning() : undefined);
       return invertForSit(source.script);
     },
   };

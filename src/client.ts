@@ -14,6 +14,7 @@
  *         private state), so while Invert is ON we refuse the upload and
  *         playback instead of silently sending an un-inverted script.
  */
+import { t } from './i18n';
 import { invertForStash } from './invert';
 import { SitExtensionApi } from './sit';
 import { StatusBus } from './status';
@@ -21,15 +22,19 @@ import { StatusBus } from './status';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyFn = (...args: any[]) => any;
 
-export const LEGACY_SIT_MESSAGE =
-  'The installed StashInteractiveTools has no extension API, so the invert cannot be applied. Playback was blocked. Install a SIT build with the extension API or turn Invert off.';
-export const HOSTED_FUNSCRIPT_MESSAGE =
-  "Scripts cannot be inverted while Stash's 'Use Stash hosted funscript' option is on. Turn that option off or turn Invert off.";
+export const legacySitMessage = () => t('errLegacySit');
+export const hostedFunscriptMessage = () => t('errHostedFunscript');
 
 export type ClientDeps = {
   resolveEnabled: () => Promise<boolean>;
   sitApi: () => SitExtensionApi | undefined;
   status: StatusBus;
+  /**
+   * Called before the device is started. Returning true refuses this start,
+   * e.g. because the invert setting changed elsewhere since the script on the
+   * device was prepared (the guard then prepares it again).
+   */
+  playGuard?: () => boolean;
   fetchJson?: (url: string) => Promise<unknown>;
   createObjectUrl?: (json: string) => string;
   revokeObjectUrl?: (url: string) => void;
@@ -39,7 +44,7 @@ const GATED = ['play', 'ensurePlaying'] as const;
 
 const defaultFetchJson = async (url: string) => {
   const r = await fetch(url);
-  if (!r.ok) throw new Error(`Could not load the funscript (HTTP ${r.status})`);
+  if (!r.ok) throw new Error(t('errFetch', { status: r.status }));
   return r.json();
 };
 
@@ -94,6 +99,10 @@ export function wrapClient<T extends object>(base: T, deps: ClientDeps): T {
         await stopDevice();
         return;
       }
+      if (deps.playGuard?.()) {
+        await stopDevice();
+        return;
+      }
       return original.apply(this, args);
     };
   }
@@ -112,7 +121,7 @@ export function wrapClient<T extends object>(base: T, deps: ClientDeps): T {
           deps.status.set({ kind: 'ready', via: 'stash', inverted: false });
         return;
       }
-      if (target.useStashHostedFunscript) throw new Error(HOSTED_FUNSCRIPT_MESSAGE);
+      if (target.useStashHostedFunscript) throw new Error(hostedFunscriptMessage());
       deps.status.set({ kind: 'applying' });
       const inverted = invertForStash(await fetchJson(path));
       if (gen !== generation) return;
@@ -147,8 +156,9 @@ export function wrapClient<T extends object>(base: T, deps: ClientDeps): T {
         return sitUpload.apply(this, args);
       }
       if (await deps.resolveEnabled()) {
-        await block(LEGACY_SIT_MESSAGE);
-        throw new Error(LEGACY_SIT_MESSAGE);
+        const message = legacySitMessage();
+        await block(message);
+        throw new Error(message);
       }
       gate.blocked = null;
       return sitUpload.apply(this, args);

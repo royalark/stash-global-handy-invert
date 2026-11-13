@@ -11,6 +11,7 @@ import {
   PLUGIN_BUILDS,
   scan,
   setInvert,
+  setLanguage,
   setStashHostedFunscript,
   startStash,
   stopStash,
@@ -198,6 +199,109 @@ test.describe('SIT fork (extension API) + Global Invert', () => {
     await startStash();
     const w = await world(browser);
     expect((await openScene(w, 'clip-b')).positions).toEqual(mirrored('clip-b.funscript'));
+  });
+});
+
+const isPlaying = (page) =>
+  page.evaluate(() => !window.PluginApi.utils.InteractiveUtils.getPlayer().paused());
+const play = (page) => page.evaluate(() => window.PluginApi.utils.InteractiveUtils.getPlayer().play());
+const toastText = (page) => page.locator('.toast').allTextContents().then((t) => t.join(' | '));
+
+test.describe('changes made elsewhere', () => {
+  test.beforeEach(() => setInvert(false));
+
+  test('16. another tab of the same browser: picked up at once and re-prepared while playing', async ({ browser }) => {
+    const w = await world(browser);
+    const tab2 = await w.context.newPage();
+    const before = w.log.setups.length;
+    await tab2.goto(`${ORIGIN}/scenes/${sceneId('clip-b')}`);
+    await loadedScript(w.log, before);
+    await openScene(w, 'clip-a'); // tab 1
+    await play(tab2);
+    await expect.poll(() => isPlaying(tab2)).toBe(true);
+
+    const t0 = Date.now();
+    await toggle(w.page).click(); // tab 1: OFF -> ON
+    await expect(toggle(tab2)).toHaveText(/ON/, { timeout: 2000 }); // broadcast, not the 5 s poll
+    expect(Date.now() - t0).toBeLessThan(2000);
+    await expect.poll(() => isPlaying(tab2)).toBe(false);
+    await expect.poll(() => toastText(tab2)).toMatch(/turned ON elsewhere and has been applied/);
+    // tab 2 (the playing one) prepared its own scene again, inverted.
+    // Both tabs share one device here, so which upload lands last is not asserted.
+    const uploadsAfter = () => w.log.uploads.slice(before).map((u) => u.positions.join());
+    await expect.poll(uploadsAfter).toContain(mirrored('clip-b.funscript').join());
+  });
+
+  test('17. another browser while playing: picked up within the poll interval and re-prepared', async ({ browser }) => {
+    const a = await world(browser);
+    const b = await world(browser);
+    await openScene(a, 'clip-a');
+    await openScene(b, 'clip-b');
+    await play(b.page);
+    await expect.poll(() => b.log.plays.length).toBeGreaterThan(0);
+    const before = b.log.setups.length;
+    const stops = b.log.stops;
+
+    await toggle(a.page).click(); // browser A: OFF -> ON
+    await expect(toggle(b.page)).toHaveText(/ON/, { timeout: 8000 });
+    const csv = await loadedScript(b.log, before);
+    expect(csv.positions).toEqual(mirrored('clip-b.funscript'));
+    expect(b.log.stops).toBeGreaterThan(stops);
+    expect(await isPlaying(b.page)).toBe(false);
+    await expect.poll(() => toastText(b.page)).toMatch(/elsewhere and has been applied/);
+    // polling must not disturb Stash's own cached configuration
+    const cached = await b.page.evaluate(() =>
+      window.PluginApi.utils.StashService.getClient().readQuery({
+        query: window.PluginApi.GQL.ConfigurationDocument,
+      })?.configuration?.interface?.language ?? null,
+    );
+    expect(cached).not.toBeNull();
+  });
+
+  test('18. another browser while paused: device untouched until play, then re-prepared first', async ({ browser }) => {
+    const a = await world(browser);
+    const b = await world(browser);
+    await openScene(a, 'clip-a');
+    expect((await openScene(b, 'clip-b')).positions).toEqual(raw('clip-b.funscript'));
+    const before = b.log.setups.length;
+
+    await toggle(a.page).click(); // browser A: OFF -> ON
+    await expect(toggle(b.page)).toHaveText(/ON/, { timeout: 8000 });
+    await expect(b.page.locator('.sgi-stale')).toBeVisible();
+    await expect.poll(() => toastText(b.page)).toMatch(/applies when you press play/);
+    await b.page.waitForTimeout(1500);
+    expect(b.log.setups.length).toBe(before); // B did not touch the device
+
+    const playsBefore = b.log.plays.length;
+    await play(b.page); // first play: refused, script prepared again
+    const csv = await loadedScript(b.log, before);
+    expect(csv.positions).toEqual(mirrored('clip-b.funscript'));
+    expect(b.log.plays.length).toBe(playsBefore);
+    await expect.poll(() => toastText(b.page)).toMatch(/prepared again/);
+    await expect(b.page.locator('.sgi-stale')).toHaveCount(0);
+
+    await play(b.page); // second play: runs
+    await expect.poll(() => b.log.plays.length).toBeGreaterThan(playsBefore);
+  });
+});
+
+test.describe('Korean UI', () => {
+  test('19. follows Stash\'s interface language', async ({ browser }) => {
+    await setLanguage('ko-KR');
+    try {
+      await setInvert(false);
+      const w = await world(browser);
+      await openScene(w, 'clip-a');
+      await expect(toggle(w.page)).toHaveText(/Handy 반전: OFF/);
+      await expect(toggle(w.page)).toHaveAttribute('title', /전역 설정/);
+      await setInvert(true);
+      await w.page.goto(`${ORIGIN}/scenes/${sceneId('clip-c')}`);
+      await expect(w.page.locator('.sgi-blocked')).toHaveText('⚠ 재생 차단됨', { timeout: 15000 });
+      await expect.poll(() => toastText(w.page)).toMatch(/범위를 벗어났습니다/);
+    } finally {
+      await setLanguage('en-GB');
+      await setInvert(false);
+    }
   });
 });
 

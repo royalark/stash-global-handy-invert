@@ -93,3 +93,7 @@ export async function setStashHostedFunscript(value) {
 }
 
 export const configYml = () => readFileSync(join(HOME, 'config.yml'), 'utf8');
+
+export async function setLanguage(language) {
+  await gql('mutation($l: String) { configureInterface(input: { language: $l }) { language } }', { l: language });
+}

@@ -2,10 +2,10 @@
   name: "Stash Global Handy Invert"
   metadata:
     description: "Persistent, global invert of the Handy (L0) stroke direction for every scene. Works with Stash's built-in Handy client and with StashInteractiveTools (extension API build)."
-  version: "0.1.0"
-  date: "2026-11-13 08:13:04"
-  path: https://github.com/royalark/stash-global-handy-invert/releases/download/v0.1.0/pkg-StashGlobalInvert-0.1.0.zip
-  sha256: 16508014b6f621aa2a85ddec381febbf959e62c57453c13cfdd995905e23fba2
+  version: "0.2.0"
+  date: "2026-11-13 08:30:00"
+  path: https://github.com/royalark/stash-global-handy-invert/releases/download/v0.2.0/pkg-StashGlobalInvert-0.2.0.zip
+  sha256: 3865c6ba00c21394e37f79f410dd2996686f8f33601792e6c59b4ebec7f20e38
 - id: StashInteractiveTools
   name: "Stash Interactive Tools (extension API)"
   metadata:

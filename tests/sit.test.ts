@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   connectSit,
   createSitTransform,
-  CUSTOM_INVERT_WARNING,
+  customInvertWarning,
   SIT_GLOBAL,
   SIT_READY_EVENT,
   TRANSFORM_ID,
@@ -47,7 +47,7 @@ describe('SIT output transform', () => {
       { kind: 'actions', script },
       ctx([{ id: 'custom', values: { functionText: 'return actions.map(a=>({at:a.at,pos:100-a.pos}))' } }]),
     );
-    expect(status.get().warning).toBe(CUSTOM_INVERT_WARNING);
+    expect(status.get().warning).toBe(customInvertWarning());
     await t.transform({ kind: 'actions', script }, ctx());
     expect(status.get().warning).toBeUndefined();
   });
