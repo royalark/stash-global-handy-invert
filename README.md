@@ -165,6 +165,7 @@ plugins:
 | Unit + integration (`npm test`) | 78 passed: pure transforms, settings and sync, i18n, client wrapper and play guard, SIT transform, wiring with the real SIT fork source |
 | SIT fork unit tests | 14 passed |
 | End-to-end (real Stash v0.32.0 binary + real plugin builds + Chromium) | 23 passed |
+| Real device | The Handy with Stash v0.32.0 on Windows, v0.2.1 and the SIT extension API build installed from the plugin source: the stroke direction is inverted with Invert ON (manual check) |
 
 The end-to-end tests assert on the CSV the device would download and on the `hssp/setup` call that loads it. They cover:
 
@@ -185,11 +186,12 @@ The end-to-end tests assert on the CSV the device would download and on the `hss
 
 Installing through the plugin source (Option A) was also checked on a local Stash v0.32.0: both packages installed, loaded, and inverted the script sent to the device.
 
-**Not verified:**
+**What the automated tests fake:**
 
-- **A real Handy device.** The Handy API and the handyfeeling CSV upload were replaced by local fakes; nothing was sent to external services.
-- **SIT's Python backend.** Its `init` task (which lists alternative scripts) was faked; this work does not change it.
-- **Windows.** Tests ran on macOS. The plugin is browser-only JavaScript, but this was not checked on Windows.
+- **The Handy API and the handyfeeling CSV upload** are answered locally, so nothing is sent to external services. The real device check above covers this path.
+- **SIT's Python backend** (its `init` task, which lists alternative scripts) is faked. This work does not change it.
+
+The automated tests run on macOS. The real device check was done on Windows.
 
 ## First test with a real device
 
