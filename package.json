@@ -1,0 +1,23 @@
+{
+  "name": "stash-global-invert",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Persistent global Handy (L0) stroke invert for Stash, compatible with StashInteractiveTools",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p .",
+    "e2e": "npm --prefix e2e test"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "esbuild": "0.25.10",
+    "typescript": "5.6.3",
+    "vitest": "3.2.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/royalark/stash-global-handy-invert.git"
+  }
+}

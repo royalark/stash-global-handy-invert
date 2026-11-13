@@ -1,0 +1,26 @@
+name: Stash Global Handy Invert
+description: >-
+  Persistent, global invert of the Handy (L0) stroke direction for every scene.
+  Works with Stash's built-in Handy client and with StashInteractiveTools
+  (requires the SIT extension API; without it playback is blocked while ON).
+version: 0.1.0
+ui:
+  # load after SIT when it is installed (ordering only; SIT is optional)
+  requires:
+    - StashInteractiveTools
+  javascript:
+    - stash-global-invert.js
+  css:
+    - stash-global-invert.css
+  csp:
+    # Stash's built-in client fetches the inverted script from a blob: URL
+    connect-src:
+      - 'blob:'
+settings:
+  enabled:
+    displayName: Global Handy Invert
+    description: >-
+      When ON, the Handy stroke direction is inverted (pos -> 100 - pos) for
+      every scene. Stored in the Stash server settings, so it applies to every
+      browser. Can also be toggled with the 'Handy Invert' button on a scene page.
+    type: BOOLEAN

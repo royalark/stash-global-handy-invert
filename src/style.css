@@ -1,0 +1,23 @@
+.stash-global-invert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.25rem;
+}
+.stash-global-invert .sgi-toggle {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.stash-global-invert .sgi-on {
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.45);
+}
+.stash-global-invert .sgi-note {
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.stash-global-invert .sgi-blocked {
+  color: #ff6b6b;
+}
+.stash-global-invert .sgi-warning {
+  color: #f0ad4e;
+}
