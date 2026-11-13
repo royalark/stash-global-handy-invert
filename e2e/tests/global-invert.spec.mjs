@@ -6,6 +6,7 @@ import { SCRIPTS } from '../lib/fixtures.mjs';
 import { installHandyMock, installSitInitMock } from '../lib/mocks.mjs';
 import {
   configYml,
+  gql,
   HOME,
   ORIGIN,
   PLUGIN_BUILDS,
@@ -18,6 +19,7 @@ import {
   usePlugins,
 } from '../lib/stash.mjs';
 import { join } from 'node:path';
+import { cpSync, rmSync } from 'node:fs';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -324,6 +326,26 @@ test.describe('unmodified SIT (no extension API) + Global Invert', () => {
     await w.page.waitForTimeout(2500);
     expect(w.log.setups).toEqual([]);
     expect(w.log.plays).toEqual([]);
+  });
+
+  test('10b. duplicate install: an old SIT copy shadows the extension build, and the message says so', async ({ browser }) => {
+    // old SIT at plugins/StashInteractiveTools, extension build + this plugin under plugins/royalark/
+    const dir = join(HOME, 'plugins');
+    rmSync(dir, { recursive: true, force: true });
+    cpSync(PLUGIN_BUILDS.sitLegacy, join(dir, 'StashInteractiveTools'), { recursive: true });
+    cpSync(PLUGIN_BUILDS.sitFork, join(dir, 'royalark', 'StashInteractiveTools'), { recursive: true });
+    cpSync(PLUGIN_BUILDS.invert, join(dir, 'royalark', 'StashGlobalInvert'), { recursive: true });
+    await gql('mutation { reloadPlugins }');
+    await setInvert(true);
+    try {
+      const w = await world(browser);
+      await w.page.goto(`${ORIGIN}/scenes/${sceneId('clip-a')}`);
+      await expect(w.page.locator('.sgi-blocked')).toBeVisible({ timeout: 15000 });
+      await expect.poll(() => toastText(w.page)).toMatch(/Loaded now: "Stash Interactive Tools" 1\.1\.0-next/);
+      expect(w.log.setups).toEqual([]);
+    } finally {
+      await usePlugins({ StashInteractiveTools: PLUGIN_BUILDS.sitLegacy, StashGlobalInvert: PLUGIN_BUILDS.invert });
+    }
   });
 
   test('11. OFF: SIT behaves as without this plugin', async ({ browser }) => {

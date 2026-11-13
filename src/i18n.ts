@@ -33,6 +33,8 @@ const en = {
   errSettings: 'Could not read the Global Invert setting from the Stash server',
   errLegacySit:
     'The installed StashInteractiveTools has no extension API, so the invert cannot be applied. Playback was blocked. Install a SIT build with the extension API or turn Invert off.',
+  errLegacySitLoaded:
+    ' Loaded now: "{name}" {version}. Stash loads only one plugin per ID: if you installed the extension API build, an older StashInteractiveTools copy is still in your plugins folder and was loaded instead. Remove that copy, then reload plugins (see Troubleshooting in the README).',
   errHostedFunscript:
     "Scripts cannot be inverted while Stash's 'Use Stash hosted funscript' option is on. Turn that option off or turn Invert off.",
   errHandyToken:
@@ -74,6 +76,8 @@ const ko: Record<MessageKey, string> = {
   errSettings: 'Stash 서버에서 Global Invert 설정을 읽지 못했습니다',
   errLegacySit:
     '설치된 StashInteractiveTools에 확장 API가 없어 반전을 적용할 수 없습니다. 재생을 차단했습니다. 확장 API가 포함된 SIT를 설치하거나 반전을 끄세요.',
+  errLegacySitLoaded:
+    ' 현재 로드된 SIT: "{name}" {version}. Stash는 같은 ID의 플러그인을 하나만 로드합니다. 확장 API 버전을 설치했다면 플러그인 폴더에 남아 있는 이전 StashInteractiveTools가 대신 로드된 것입니다. 그 사본을 지우고 플러그인을 다시 불러오세요 (README의 Troubleshooting 참고).',
   errHostedFunscript:
     "Stash의 'Use Stash hosted funscript' 옵션이 켜져 있으면 반전할 수 없습니다. 이 옵션을 끄거나 반전을 끄세요.",
   errHandyToken:

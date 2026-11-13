@@ -209,6 +209,18 @@ describe('StashInteractiveTools path', () => {
     expect(t.status.get().status).toEqual({ kind: 'blocked', message: legacySitMessage() });
   });
 
+  it('names the SIT build that is actually loaded (duplicate install hint)', async () => {
+    const t = setup();
+    const client = wrapClient(new FakeStashClient(t.files), {
+      ...t.deps,
+      describeSit: async () => ({ name: 'Stash Interactive Tools', version: '1.1.0-next' }),
+    }) as any;
+    sitPatch(client, 'uploadScript', vi.fn());
+    await expect(client.uploadScript('blob:x')).rejects.toThrow(
+      /Loaded now: "Stash Interactive Tools" 1\.1\.0-next\. Stash loads only one plugin per ID/,
+    );
+  });
+
   it('SIT without extension API + OFF: SIT works exactly as before', async () => {
     const t = setup({ enabled: false });
     const sitUpload = vi.fn(async () => undefined);

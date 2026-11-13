@@ -35,6 +35,8 @@ export type ClientDeps = {
    * device was prepared (the guard then prepares it again).
    */
   playGuard?: () => boolean;
+  /** describes the SIT build Stash actually loaded, for the error message */
+  describeSit?: () => Promise<{ name: string; version?: string } | undefined>;
   fetchJson?: (url: string) => Promise<unknown>;
   createObjectUrl?: (json: string) => string;
   revokeObjectUrl?: (url: string) => void;
@@ -156,7 +158,17 @@ export function wrapClient<T extends object>(base: T, deps: ClientDeps): T {
         return sitUpload.apply(this, args);
       }
       if (await deps.resolveEnabled()) {
-        const message = legacySitMessage();
+        let message = legacySitMessage();
+        try {
+          const loaded = await deps.describeSit?.();
+          if (loaded)
+            message += t('errLegacySitLoaded', {
+              name: loaded.name,
+              version: loaded.version ?? '',
+            });
+        } catch {
+          /* the base message is enough */
+        }
         await block(message);
         throw new Error(message);
       }

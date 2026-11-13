@@ -45,6 +45,23 @@ installClientProvider(pluginApi.utils.InteractiveUtils, {
   sitApi: sit.api,
   status,
   playGuard: () => playGuard?.() ?? false,
+  async describeSit() {
+    const result = await pluginApi.utils.StashService.getClient().query({
+      query: pluginApi.libraries.Apollo.gql`
+        query StashGlobalInvertPlugins {
+          plugins {
+            id
+            name
+            version
+          }
+        }
+      `,
+      fetchPolicy: 'no-cache',
+    });
+    return result.data?.plugins?.find(
+      (p: any) => p.id.toLowerCase() === 'stashinteractivetools',
+    );
+  },
 });
 
 const GlobalInvertToggle = createInvertToggle({

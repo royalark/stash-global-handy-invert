@@ -38,6 +38,8 @@ Two ways to install. Both need Stash v0.32.0 or later.
    1. Go to `Settings -> Plugins -> Installed Plugins`.
    2. Tick `StashInteractiveTools`, then click `Uninstall`.
 
+   If SIT was installed **manually** (a folder copied into `plugins`), it is not listed there. Move that folder out of the plugins folder instead (see [Troubleshooting](#troubleshooting)).
+
    Your SIT modifier presets are stored in the browser and are kept.
 2. In `Settings -> Plugins -> Available Plugins`, click **`Add source`** and enter:
 
@@ -160,9 +162,9 @@ plugins:
 
 | Kind | Result |
 |---|---|
-| Unit + integration (`npm test`) | 77 passed: pure transforms, settings and sync, i18n, client wrapper and play guard, SIT transform, wiring with the real SIT fork source |
+| Unit + integration (`npm test`) | 78 passed: pure transforms, settings and sync, i18n, client wrapper and play guard, SIT transform, wiring with the real SIT fork source |
 | SIT fork unit tests | 14 passed |
-| End-to-end (real Stash v0.32.0 binary + real plugin builds + Chromium) | 22 passed |
+| End-to-end (real Stash v0.32.0 binary + real plugin builds + Chromium) | 23 passed |
 
 The end-to-end tests assert on the CSV the device would download and on the `hssp/setup` call that loads it. They cover:
 
@@ -179,6 +181,7 @@ The end-to-end tests assert on the CSV the device would download and on the `hss
 - a change in another tab is picked up in under 2 seconds and a playing tab is prepared again
 - a change in another browser is picked up while playing (prepared again) and while paused (device untouched until play)
 - Korean UI when Stash's language is Korean
+- an old SIT copy shadowing the extension API build: playback blocked, and the message names the loaded copy
 
 Installing through the plugin source (Option A) was also checked on a local Stash v0.32.0: both packages installed, loaded, and inverted the script sent to the device.
 
@@ -195,6 +198,41 @@ Installing through the plugin source (Option A) was also checked on a local Stas
 3. Pause, click `Handy Invert`, wait for the "applied" toast, then play. The direction should be reversed.
 4. Try other scenes and LOW/NORMAL/HIGHER, and check the setting after a reload.
 5. If you previously saved a `Custom` invert preset, remove it (see the double invert warning).
+
+## Troubleshooting
+
+### "The installed StashInteractiveTools has no extension API" although you installed the extension API build
+
+Stash loads only one plugin per ID. It reads the plugins folder in alphabetical order and skips any later copy with the same ID. The only trace is a line in the Stash log: `plugin ID StashInteractiveTools already exists`. An old SIT left in `plugins\StashInteractiveTools` or `plugins\community\StashInteractiveTools` is read before `plugins\royalark\StashInteractiveTools`, so the extension API build is never loaded.
+
+The error message names the SIT that is actually loaded (since v0.2.1). To fix it:
+
+1. List every copy and its name.
+
+   Windows (PowerShell):
+
+   ```powershell
+   Get-ChildItem "$env:USERPROFILE\.stash\plugins" -Recurse -Filter StashInteractiveTools.yml | Select-String -Pattern '^name:'
+   ```
+
+   macOS / Linux:
+
+   ```bash
+   grep -r --include=StashInteractiveTools.yml '^name:' ~/.stash/plugins
+   ```
+
+   The extension API build is the one named `Stash Interactive Tools (extension API)`.
+2. Move every other copy out of the plugins folder. Keep it as a backup rather than deleting it. For example, on Windows:
+
+   ```powershell
+   Move-Item "$env:USERPROFILE\.stash\plugins\StashInteractiveTools" "$env:USERPROFILE\.stash\StashInteractiveTools.old"
+   ```
+
+   If the old copy was installed from a plugin source, `Settings -> Plugins -> Installed Plugins -> Uninstall` also works.
+3. Click `Settings -> Plugins -> Reload plugins`, then hard-reload the browser (`Ctrl+Shift+R`).
+4. Check the result:
+   - `Installed Plugins` shows **Stash Interactive Tools (extension API)**.
+   - In the browser console (`F12`), `window.StashInteractiveTools?.apiVersion` returns `1`.
 
 ## Rollback
 
